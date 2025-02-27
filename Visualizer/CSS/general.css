@@ -1,0 +1,157 @@
+h1,
+h3 {
+    display: inline-block;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+/*.col {*/
+/*    padding: 0;*/
+/*}*/
+
+.content {
+    padding: 0 1em 0 1em;
+}
+
+
+/*********************************/
+/*            Controles          */
+/*********************************/
+
+#controles {
+    height: 7vh;
+    background: white;
+    border: 1px solid black;
+    /*    border-bottom: 3px solid black;*/
+    border-bottom: 0;
+}
+
+#fase_previa_btn[disabled] {
+  background-color: #dddddd;
+  color: #888888;
+  cursor: not-allowed;
+}
+
+#controles div {
+    padding-top: 0.35em;
+    /*    padding-bottom: 0.5em;*/
+}
+
+/*********************************/
+/*              Log              */
+/*********************************/
+
+
+.log {
+    /*    padding-right: 0;*/
+    /*    border: 1px solid black;*/
+    padding: 0 1em 0 1em;
+    border-left: 3px solid black;
+}
+
+#other_useful_info {
+    border-top: black solid 1px;
+}
+
+#commerce_log_text,
+#other_useful_info_text {
+    background: white;
+    font-family: monospace;
+    overflow-y: scroll;
+}
+
+
+#commerce_log_title,
+#other_useful_info_title {
+    font-family: sans-serif;
+    text-decoration: underline;
+}
+
+.commerce_P1 {
+    color: darkred;
+}
+.commerce_P2 {
+    color: darkblue;
+}
+.commerce_P3 {
+    color: darkgreen;
+}
+.commerce_P4 {
+    color: darkgoldenrod;
+}
+
+.gives,
+.receives {
+    margin: 0;
+    margin-left: 5em;
+}
+
+.answers {
+    margin-left: 5em;
+}
+
+.counteroffer_gives,
+.counteroffer_receives,
+.counteroffer_answer {
+    margin-left: 5em;
+}
+
+
+/*********************************/
+/*         Player profiles       */
+/*********************************/
+
+
+.player {
+    border: 1px black solid;
+    border-top: 0;
+    border-left: 0;
+}
+
+.playerprofile {
+    /*    height: 10vh;*/
+}
+
+.largest_army,
+.longest_road {
+    height: 5vh;
+    color: rgba(127, 127, 127, 50%)
+}
+
+.hand {
+    background: white;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+}
+
+.top_hand_row {
+    align-items: flex-start;
+    height: 50%;
+}
+
+.bottom_hand_row {
+    align-items: flex-end;
+    height: 50%;
+}
+
+.increment {
+    width: 1rem;
+}
+
+.increased {
+    color: red;
+}
+
+.decreased {
+    color: mediumblue;
+}
+
+.neutral {
+    color: darkgreen;
+}
