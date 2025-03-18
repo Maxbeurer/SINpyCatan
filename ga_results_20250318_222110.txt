@@ -1,0 +1,21 @@
+Resultados del Algoritmo Genético para Catán
+==========================================
+
+Parámetros: POPULATION_SIZE=50, CXPB=0.8, MUTPB=0.2, NGEN=100
+Tiempo total de ejecución: 197.24 segundos
+
+Mejor individuo encontrado:
+[0.05382479478904795, 0.16672111716866084, 0.0, 0.12617737897654407, 0.26930784477010866, 0.05012939471796993, 0.10104289973723146, 0.09140030731628294, 0.044696999570826255, 0.09669926295332792]
+Fitness: 0.9999999999999998
+
+Probabilidades de selección de agentes:
+RandomAgent: 0.0538
+AdrianHerasAgent: 0.1667
+AlexPastorAgent: 0.0000
+AlexPelochoJaimeAgent: 0.1262
+CarlesZaidaAgent: 0.2693
+CrabisaAgent: 0.0501
+EdoAgent: 0.1010
+PabloAleixAlexAgent: 0.0914
+SigmaAgent: 0.0447
+TristanAgent: 0.0967

@@ -27,10 +27,10 @@ NUM_AGENTS = len(AGENTS)
 POPULATION_SIZE = 50  # Tamaño de la población
 CXPB = 0.8           # Probabilidad de cruce
 MUTPB = 0.2           # Probabilidad de mutación
-NGEN = 200          # Número de generaciones
+NGEN = 100          # Número de generaciones
 TOURNAMENT_SIZE = 3   # Tamaño del torneo para selección
 ELITE_SIZE = 5        # Número de mejores individuos que pasan directamente a la siguiente generación
-GAMES_PER_EVAL = 10   # Número de partidas para evaluar cada individuo
+GAMES_PER_EVAL = 5   # Número de partidas para evaluar cada individuo
 SIGMA = 0.1           # Desviación estándar para la mutación gaussiana
 
 # Configuración de DEAP
@@ -230,6 +230,9 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
     Returns:
         Población final, registro de estadísticas, y mejor individuo
     """
+    # Crear un nombre de archivo para el registro basado en los parámetros y la fecha/hora
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    logbook_file = f"ga_logbook_{timestamp}_pop{pop_size}_cx{cxpb}_mut{mutpb}_gen{ngen}_games{games_per_eval}.csv"
     try:
         # Crear población inicial
         population = toolbox.population(n=pop_size)
@@ -249,6 +252,10 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
         # Crear el objeto para guardar el hall of fame (mejores individuos)
         hof = tools.HallOfFame(elite_size)
         
+        # Crear el logbook para registrar la evolución del fitness
+        logbook = tools.Logbook()
+        logbook.header = ['gen', 'nevals'] + stats.fields
+        
         # Evaluar la población inicial
         print("Evaluando población inicial...")
         fitnesses = list(toolbox.map(toolbox.evaluate, population))
@@ -257,6 +264,7 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
         
         # Registrar estadísticas iniciales
         record = stats.compile(population)
+        logbook.record(gen=0, nevals=len(population), **record)
         print(f"Gen 0: {record}")
         
         # Algoritmo genético con elitismo
@@ -300,6 +308,7 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
                 
                 # Registrar estadísticas
                 record = stats.compile(population)
+                logbook.record(gen=gen, nevals=len(invalid_ind), **record)
                 print(f"Gen {gen}: {record}")
                 print(f"Tiempo de generación: {time.time() - start_time:.2f} segundos")
                 
@@ -317,7 +326,22 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
         pool.close()
         pool.join()
         
-        return population, stats, hof
+        # Guardar el logbook en un archivo CSV
+        try:
+            with open(logbook_file, 'w') as f:
+                # Escribir encabezado
+                f.write(','.join(logbook.header) + '\n')
+                
+                # Escribir datos de cada generación
+                for row in logbook:
+                    values = [str(row[col]) for col in logbook.header]
+                    f.write(','.join(values) + '\n')
+                    
+            print(f"Registro de evolución guardado en {logbook_file}")
+        except Exception as e:
+            print(f"Error al guardar el registro de evolución: {e}")
+        
+        return population, stats, hof, logbook
         
     except Exception as e:
         print(f"Error en el algoritmo genético: {e}")
@@ -340,6 +364,7 @@ def experiment_hyperparameters():
     mutpbs = [0.1, 0.2, 0.3]
     tournament_sizes = [2, 3, 5]
     games_per_evals = [5, 10, 20]
+    num_generations = [50, 100, 200]  # Número de generaciones a probar
     
     try:
         with open(results_file, "w") as f:
@@ -354,16 +379,24 @@ def experiment_hyperparameters():
                     print(f"\nProbando tamaño de población: {pop_size}")
                     f.write(f"\nTamaño de población: {pop_size}\n")
                     
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
                     # Ejecutar algoritmo con número reducido de generaciones para pruebas
-                    _, stats, hof = run_genetic_algorithm(pop_size=pop_size, ngen=10)
+                    _, stats, hof, _ = run_genetic_algorithm(pop_size=pop_size, ngen=10)
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
                     
                     # Guardar resultados
                     if len(hof) > 0:
                         best_ind = hof[0]
                         f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
-                        f.write("No se encontraron individuos válidos en el Hall of Fame\n\n")
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                 except Exception as e:
                     print(f"Error en experimento con tamaño de población {pop_size}: {e}")
                     f.write(f"Error: {e}\n\n")
@@ -377,14 +410,22 @@ def experiment_hyperparameters():
                     print(f"\nProbando probabilidad de cruce: {cxpb}")
                     f.write(f"\nProbabilidad de cruce: {cxpb}\n")
                     
-                    _, stats, hof = run_genetic_algorithm(cxpb=cxpb, ngen=10)
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
+                    _, stats, hof, _ = run_genetic_algorithm(cxpb=cxpb, ngen=10)
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
                         best_ind = hof[0]
                         f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
-                        f.write("No se encontraron individuos válidos en el Hall of Fame\n\n")
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                 except Exception as e:
                     print(f"Error en experimento con probabilidad de cruce {cxpb}: {e}")
                     f.write(f"Error: {e}\n\n")
@@ -398,14 +439,22 @@ def experiment_hyperparameters():
                     print(f"\nProbando probabilidad de mutación: {mutpb}")
                     f.write(f"\nProbabilidad de mutación: {mutpb}\n")
                     
-                    _, stats, hof = run_genetic_algorithm(mutpb=mutpb, ngen=10)
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
+                    _, stats, hof, _ = run_genetic_algorithm(mutpb=mutpb, ngen=10)
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
                         best_ind = hof[0]
                         f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
-                        f.write("No se encontraron individuos válidos en el Hall of Fame\n\n")
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                 except Exception as e:
                     print(f"Error en experimento con probabilidad de mutación {mutpb}: {e}")
                     f.write(f"Error: {e}\n\n")
@@ -426,14 +475,22 @@ def experiment_hyperparameters():
                     toolbox.unregister("select")
                     toolbox.register("select", tools.selTournament, tournsize=tournament_size)
                     
-                    _, stats, hof = run_genetic_algorithm(ngen=10)
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
+                    _, stats, hof, _ = run_genetic_algorithm(ngen=10)
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
                         best_ind = hof[0]
                         f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
-                        f.write("No se encontraron individuos válidos en el Hall of Fame\n\n")
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                 except Exception as e:
                     print(f"Error en experimento con tamaño de torneo {tournament_size}: {e}")
                     f.write(f"Error: {e}\n\n")
@@ -451,16 +508,55 @@ def experiment_hyperparameters():
                     print(f"\nProbando número de partidas: {games_per_eval}")
                     f.write(f"\nNúmero de partidas: {games_per_eval}\n")
                     
-                    _, stats, hof = run_genetic_algorithm(games_per_eval=games_per_eval, ngen=10)
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
+                    _, stats, hof, _ = run_genetic_algorithm(games_per_eval=games_per_eval, ngen=10)
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
                         best_ind = hof[0]
                         f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
-                        f.write("No se encontraron individuos válidos en el Hall of Fame\n\n")
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                 except Exception as e:
                     print(f"Error en experimento con número de partidas {games_per_eval}: {e}")
+                    f.write(f"Error: {e}\n\n")
+                    continue
+            
+            # Experimento 6: Número de generaciones
+            f.write("\nExperimento 6: Número de generaciones\n")
+            f.write("--------------------------------------\n")
+            for ngen in num_generations:
+                try:
+                    print(f"\nProbando número de generaciones: {ngen}")
+                    f.write(f"\nNúmero de generaciones: {ngen}\n")
+                    
+                    # Medir tiempo de ejecución
+                    start_time = time.time()
+                    
+                    # Para este experimento, usamos un número reducido de generaciones para la prueba
+                    # pero variamos el parámetro ngen para ver su impacto en la convergencia
+                    _, stats, hof, _ = run_genetic_algorithm(ngen=ngen, pop_size=30)  # Población pequeña para acelerar
+                    
+                    # Calcular tiempo de ejecución
+                    execution_time = time.time() - start_time
+                    
+                    if len(hof) > 0:
+                        best_ind = hof[0]
+                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
+                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
+                    else:
+                        f.write("No se encontraron individuos válidos en el Hall of Fame\n")
+                        f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
+                except Exception as e:
+                    print(f"Error en experimento con número de generaciones {ngen}: {e}")
                     f.write(f"Error: {e}\n\n")
                     continue
         
@@ -492,7 +588,7 @@ def main():
             try:
                 # Ejecutar algoritmo genético
                 start_time = time.time()
-                final_pop, stats, hof = run_genetic_algorithm()
+                final_pop, stats, hof, logbook = run_genetic_algorithm()
                 total_time = time.time() - start_time
                 
                 # Verificar que se obtuvieron resultados válidos
@@ -526,6 +622,13 @@ def main():
                         f.write("==========================================\n\n")
                         f.write(f"Parámetros: POPULATION_SIZE={POPULATION_SIZE}, CXPB={CXPB}, MUTPB={MUTPB}, NGEN={NGEN}\n")
                         f.write(f"Tiempo total de ejecución: {total_time:.2f} segundos\n\n")
+                        
+                        # Añadir información sobre la evolución del fitness
+                        f.write("Evolución del fitness por generación:\n")
+                        f.write("Gen,Avg,Min,Max,Std\n")
+                        for row in logbook:
+                            f.write(f"{row['gen']},{row['avg']},{row['min']},{row['max']},{row['std']}\n")
+                        f.write("\n")
                         
                         f.write("Mejor individuo encontrado:\n")
                         f.write(f"{best_ind}\n")
