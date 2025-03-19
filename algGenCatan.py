@@ -24,18 +24,19 @@ AGENTS = [ra, aha, apa, apja, cza, ca, ea, paaa, sa, ta]
 NUM_AGENTS = len(AGENTS)
 
 # Parámetros del algoritmo genético (configurables)
-POPULATION_SIZE = 50  # Tamaño de la población
-CXPB = 0.8           # Probabilidad de cruce
-MUTPB = 0.2           # Probabilidad de mutación
-NGEN = 100          # Número de generaciones
-TOURNAMENT_SIZE = 3   # Tamaño del torneo para selección
+POPULATION_SIZE = 70  # Tamaño de la población
+CXPB = 0.7          # Probabilidad de cruce
+MUTPB = 0.3           # Probabilidad de mutación
+NGEN = 200          # Número de generaciones
+TOURNAMENT_SIZE = 2  # Tamaño del torneo para selección
 ELITE_SIZE = 5        # Número de mejores individuos que pasan directamente a la siguiente generación
-GAMES_PER_EVAL = 5   # Número de partidas para evaluar cada individuo
+GAMES_PER_EVAL = 20   # Número de partidas para evaluar cada individuo
 SIGMA = 0.1           # Desviación estándar para la mutación gaussiana
 
 # Configuración de DEAP
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMax)
+# Definimos FitnessMulti para optimizar hacia el fitness medio y máximo simultáneamente
+creator.create("FitnessMulti", base.Fitness, weights=(1.0, 1.0))  # Pesos para fitness medio y máximo
+creator.create("Individual", list, fitness=creator.FitnessMulti)
 
 # Inicializar toolbox
 toolbox = base.Toolbox()
@@ -65,6 +66,7 @@ def evaluate_individual(individual, games_per_eval=GAMES_PER_EVAL):
         
     Returns:
         Tupla con el fitness (valor compuesto que considera múltiples factores)
+        Optimizamos hacia el fitness medio, no solo el máximo.
     """
     total_fitness = 0.0
     games_completed = 0
@@ -164,12 +166,100 @@ def evaluate_individual(individual, games_per_eval=GAMES_PER_EVAL):
             print(f"Error en la partida: {e}")
             continue
     
-    # Si no se completó ninguna partida, devolver 0
+    # Si no se completó ninguna partida, devolver 0 para ambos objetivos
     if games_completed == 0:
-        return (0.0,)
+        return (0.0, 0.0)
     
-    # Devolver el fitness promedio de todas las partidas
-    return (total_fitness / games_completed,)
+    # Calcular el fitness promedio y el fitness máximo
+    fitness_values = []
+    for _ in range(games_per_eval):
+        # Seleccionar un agente según las probabilidades del individuo
+        chosen_agent_idx = random.choices(range(NUM_AGENTS), weights=individual, k=1)[0]
+        chosen_agent = AGENTS[chosen_agent_idx]
+        
+        # Evaluar el agente en múltiples partidas para obtener una distribución de fitness
+        agent_fitness_values = []
+        for _ in range(3):  # Evaluamos cada agente en 3 partidas para estimar su rendimiento máximo
+            # Código similar al de arriba para evaluar una partida
+            # Simplificado para evitar duplicación
+            try:
+                # Seleccionar oponentes equiprobablemente entre todos los agentes
+                all_agents = [chosen_agent]
+                for _ in range(3):  # 3 oponentes
+                    opponent_idx = random.randrange(NUM_AGENTS)
+                    all_agents.append(AGENTS[opponent_idx])
+                
+                # Ejecutar la partida
+                game_director = GameDirector(agents=all_agents, max_rounds=200, store_trace=False)
+                game_trace = game_director.game_start(print_outcome=False)
+                
+                # Verificar que la partida se completó correctamente
+                if "game" not in game_trace:
+                    continue
+                
+                # Analizar resultados (código simplificado)
+                try:
+                    last_round = max(game_trace["game"].keys(), key=lambda r: int(r.split("_")[-1]))
+                    if not game_trace["game"][last_round]:
+                        continue
+                    
+                    last_turn = max(game_trace["game"][last_round].keys(), key=lambda t: int(t.split("_")[-1].lstrip("P")))
+                    if "end_turn" not in game_trace["game"][last_round][last_turn] or "victory_points" not in game_trace["game"][last_round][last_turn]["end_turn"]:
+                        continue
+                    
+                    victory_points = game_trace["game"][last_round][last_turn]["end_turn"]["victory_points"]
+                    
+                    # Recopilar puntos de victoria de todos los jugadores
+                    player_points = {}
+                    for player, points in victory_points.items():
+                        player_points[player] = int(points)
+                    
+                    # Ordenar jugadores por puntos (de mayor a menor)
+                    sorted_players = sorted(player_points.items(), key=lambda x: x[1], reverse=True)
+                    
+                    # Calcular componentes del fitness
+                    game_fitness = 0.0
+                    
+                    # 1. Victoria (0.6 del fitness total)
+                    if sorted_players[0][0] == "J0" or (len(sorted_players) > 1 and sorted_players[0][1] == sorted_players[1][1] and sorted_players[1][0] == "J0"):
+                        game_fitness += WIN_WEIGHT
+                    
+                    # 2. Puntos de victoria normalizados (0.3 del fitness total)
+                    max_possible_points = 10.0
+                    points_ratio = min(1.0, player_points.get("J0", 0) / max_possible_points)
+                    game_fitness += POINTS_WEIGHT * points_ratio
+                    
+                    # 3. Posición final (0.1 del fitness total)
+                    position = 1
+                    for player, _ in sorted_players:
+                        if player == "J0":
+                            break
+                        position += 1
+                    
+                    position_score = (5 - position) / 4.0
+                    game_fitness += POSITION_WEIGHT * position_score
+                    
+                    agent_fitness_values.append(game_fitness)
+                    
+                except (KeyError, ValueError):
+                    continue
+                    
+            except Exception:
+                continue
+        
+        # Si se completaron partidas para este agente, añadir su fitness máximo
+        if agent_fitness_values:
+            fitness_values.append(max(agent_fitness_values))
+    
+    # Si no se obtuvieron valores de fitness, devolver 0 para ambos objetivos
+    if not fitness_values:
+        return (total_fitness / games_completed, total_fitness / games_completed)
+    
+    # Devolver el fitness promedio y el fitness máximo
+    avg_fitness = total_fitness / games_completed
+    max_fitness = max(fitness_values) if fitness_values else avg_fitness
+    
+    return (avg_fitness, max_fitness)
 
 # Registrar la función de evaluación
 toolbox.register("evaluate", evaluate_individual)
@@ -296,11 +386,29 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
                 for ind, fit in zip(invalid_ind, fitnesses):
                     ind.fitness.values = fit
                 
-                # Actualizar el hall of fame
-                hof.update(offspring)
+                # Calcular el fitness medio y máximo actual de la población
+                current_avg_fitness = np.mean([ind.fitness.values[0] for ind in population])
+                current_max_fitness = np.max([ind.fitness.values[1] for ind in population])
                 
-                # Elitismo: añadir los mejores individuos de la generación anterior
-                elite = tools.selBest(population, elite_size)
+                # Actualizar el hall of fame basado en contribución a ambos objetivos
+                # Primero evaluamos la contribución de cada individuo a ambos objetivos
+                for ind in offspring:
+                    # Calculamos la contribución normalizada a cada objetivo
+                    avg_contribution = (ind.fitness.values[0] - current_avg_fitness) / max(0.001, current_avg_fitness)
+                    max_contribution = (ind.fitness.values[1] - current_max_fitness) / max(0.001, current_max_fitness)
+                    
+                    # Combinamos ambas contribuciones con pesos iguales (0.5 cada uno)
+                    ind.contribution = 0.65 * avg_contribution + 0.35 * max_contribution
+                
+                # Ordenamos por contribución combinada
+                sorted_offspring = sorted(offspring, key=lambda ind: ind.contribution, reverse=True)
+                
+                # Actualizamos el hall of fame con los individuos que más contribuyen a ambos objetivos
+                hof_candidates = sorted_offspring[:elite_size]
+                hof.update(hof_candidates)
+                
+                # Elitismo: añadir los individuos que más contribuyen a ambos objetivos
+                elite = sorted_offspring[:elite_size]
                 offspring.extend(elite)
                 
                 # Reemplazar la población
@@ -310,12 +418,29 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
                 record = stats.compile(population)
                 logbook.record(gen=gen, nevals=len(invalid_ind), **record)
                 print(f"Gen {gen}: {record}")
+                print(f"Fitness medio: {record['avg']:.4f}, Fitness máximo: {record['max']:.4f}")
                 print(f"Tiempo de generación: {time.time() - start_time:.2f} segundos")
                 
-                # Guardar el mejor individuo de esta generación
-                best_ind = tools.selBest(population, 1)[0]
-                print(f"Mejor individuo: {best_ind}")
-                print(f"Fitness: {best_ind.fitness.values[0]}")
+                # Destacar ambos objetivos: fitness medio y máximo
+                print(f"Objetivos de la población:")
+                print(f"- Fitness medio: {record['avg']:.4f}")
+                print(f"- Fitness máximo: {record['max']:.4f}")
+                
+                # Calcular contribución combinada a ambos objetivos
+                current_avg_fitness = np.mean([ind.fitness.values[0] for ind in population])
+                current_max_fitness = np.max([ind.fitness.values[1] for ind in population])
+                
+                for ind in population:
+                    avg_contribution = (ind.fitness.values[0] - current_avg_fitness) / max(0.001, current_avg_fitness)
+                    max_contribution = (ind.fitness.values[1] - current_max_fitness) / max(0.001, current_max_fitness)
+                    ind.contribution = 0.5 * avg_contribution + 0.5 * max_contribution
+                
+                # Guardar el individuo que más contribuye a ambos objetivos
+                sorted_by_contribution = sorted(population, key=lambda ind: ind.contribution, reverse=True)
+                best_contributor = sorted_by_contribution[0]
+                print(f"Individuo con mayor contribución a ambos objetivos: {best_contributor}")
+                print(f"- Fitness medio: {best_contributor.fitness.values[0]:.4f}")
+                print(f"- Fitness máximo: {best_contributor.fitness.values[1]:.4f}")
                 
             except Exception as e:
                 print(f"Error en la generación {gen}: {e}")
@@ -330,12 +455,11 @@ def run_genetic_algorithm(pop_size=POPULATION_SIZE, cxpb=CXPB, mutpb=MUTPB, ngen
         try:
             with open(logbook_file, 'w') as f:
                 # Escribir encabezado
-                f.write(','.join(logbook.header) + '\n')
+                f.write('Generación,Fitness Medio,Fitness Máximo,Fitness Mínimo,Desviación Estándar\n')
                 
                 # Escribir datos de cada generación
                 for row in logbook:
-                    values = [str(row[col]) for col in logbook.header]
-                    f.write(','.join(values) + '\n')
+                    f.write(f"{row['gen']},{row['avg']},{row['max']},{row['min']},{row['std']}\n")
                     
             print(f"Registro de evolución guardado en {logbook_file}")
         except Exception as e:
@@ -383,16 +507,24 @@ def experiment_hyperparameters():
                     start_time = time.time()
                     
                     # Ejecutar algoritmo con número reducido de generaciones para pruebas
-                    _, stats, hof, _ = run_genetic_algorithm(pop_size=pop_size, ngen=10)
+                    final_pop, stats, hof, _ = run_genetic_algorithm(pop_size=pop_size, ngen=10)
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     # Guardar resultados
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -413,15 +545,23 @@ def experiment_hyperparameters():
                     # Medir tiempo de ejecución
                     start_time = time.time()
                     
-                    _, stats, hof, _ = run_genetic_algorithm(cxpb=cxpb, ngen=10)
+                    final_pop, stats, hof, _ = run_genetic_algorithm(cxpb=cxpb, ngen=10)
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -442,15 +582,23 @@ def experiment_hyperparameters():
                     # Medir tiempo de ejecución
                     start_time = time.time()
                     
-                    _, stats, hof, _ = run_genetic_algorithm(mutpb=mutpb, ngen=10)
+                    final_pop, stats, hof, _ = run_genetic_algorithm(mutpb=mutpb, ngen=10)
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -478,15 +626,23 @@ def experiment_hyperparameters():
                     # Medir tiempo de ejecución
                     start_time = time.time()
                     
-                    _, stats, hof, _ = run_genetic_algorithm(ngen=10)
+                    final_pop, stats, hof, _ = run_genetic_algorithm(ngen=10)
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -511,15 +667,23 @@ def experiment_hyperparameters():
                     # Medir tiempo de ejecución
                     start_time = time.time()
                     
-                    _, stats, hof, _ = run_genetic_algorithm(games_per_eval=games_per_eval, ngen=10)
+                    final_pop, stats, hof, _ = run_genetic_algorithm(games_per_eval=games_per_eval, ngen=10)
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -542,15 +706,23 @@ def experiment_hyperparameters():
                     
                     # Para este experimento, usamos un número reducido de generaciones para la prueba
                     # pero variamos el parámetro ngen para ver su impacto en la convergencia
-                    _, stats, hof, _ = run_genetic_algorithm(ngen=ngen, pop_size=30)  # Población pequeña para acelerar
+                    final_pop, stats, hof, _ = run_genetic_algorithm(ngen=ngen, pop_size=30)  # Población pequeña para acelerar
                     
                     # Calcular tiempo de ejecución
                     execution_time = time.time() - start_time
                     
                     if len(hof) > 0:
+                        # Obtener estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n")
+                        
+                        # Obtener el mejor individuo del Hall of Fame
                         best_ind = hof[0]
-                        f.write(f"Mejor fitness: {best_ind.fitness.values[0]}\n")
-                        f.write(f"Mejor individuo: {best_ind}\n")
+                        f.write(f"Mejor individuo (contribución a ambos objetivos): {best_ind}\n")
+                        f.write(f"Fitness medio: {best_ind.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_ind.fitness.values[1]:.4f}\n")
                         f.write(f"Tiempo de ejecución: {execution_time:.2f} segundos\n\n")
                     else:
                         f.write("No se encontraron individuos válidos en el Hall of Fame\n")
@@ -600,15 +772,36 @@ def main():
                 print("\nResultados finales:")
                 print(f"Tiempo total de ejecución: {total_time:.2f} segundos")
                 
-                # Guardar el mejor individuo
-                best_ind = hof[0]
-                print("\nMejor individuo encontrado:")
-                print(best_ind)
-                print(f"Fitness: {best_ind.fitness.values[0]}")
+                # Obtener estadísticas finales
+                final_stats = stats.compile(final_pop)
+                print(f"Fitness medio final: {final_stats['avg']:.4f}")
+                print(f"Fitness máximo final: {final_stats['max']:.4f}")
                 
-                # Interpretar el mejor individuo
-                print("\nProbabilidades de selección de agentes:")
-                for i, prob in enumerate(best_ind):
+                # Destacar que los objetivos son el fitness medio y máximo
+                print(f"\nObjetivos alcanzados:")
+                print(f"- Fitness medio final: {final_stats['avg']:.4f}")
+                print(f"- Fitness máximo final: {final_stats['max']:.4f}")
+                
+                # Identificar el individuo que más contribuye a ambos objetivos
+                avg_fitness = final_stats['avg']
+                max_fitness = final_stats['max']
+                
+                # Calcular contribución combinada a ambos objetivos
+                for ind in final_pop:
+                    avg_contribution = (ind.fitness.values[0] - avg_fitness) / max(0.001, avg_fitness)
+                    max_contribution = (ind.fitness.values[1] - max_fitness) / max(0.001, max_fitness)
+                    ind.contribution = 0.5 * avg_contribution + 0.5 * max_contribution
+                
+                sorted_by_contribution = sorted(final_pop, key=lambda ind: ind.contribution, reverse=True)
+                best_contributor = sorted_by_contribution[0]
+                print("\nIndividuo con mayor contribución a ambos objetivos:")
+                print(best_contributor)
+                print(f"Fitness medio: {best_contributor.fitness.values[0]:.4f}")
+                print(f"Fitness máximo: {best_contributor.fitness.values[1]:.4f}")
+                
+                # Interpretar el individuo con mayor contribución al fitness medio
+                print("\nProbabilidades de selección de agentes del mejor contribuidor:")
+                for i, prob in enumerate(best_contributor):
                     agent_name = AGENTS[i].__name__
                     print(f"{agent_name}: {prob:.4f}")
                 
@@ -625,17 +818,38 @@ def main():
                         
                         # Añadir información sobre la evolución del fitness
                         f.write("Evolución del fitness por generación:\n")
-                        f.write("Gen,Avg,Min,Max,Std\n")
+                        f.write("Generación,Fitness Medio,Fitness Máximo\n")
                         for row in logbook:
-                            f.write(f"{row['gen']},{row['avg']},{row['min']},{row['max']},{row['std']}\n")
+                            f.write(f"{row['gen']},{row['avg']},{row['max']}\n")
                         f.write("\n")
                         
-                        f.write("Mejor individuo encontrado:\n")
-                        f.write(f"{best_ind}\n")
-                        f.write(f"Fitness: {best_ind.fitness.values[0]}\n\n")
+                        # Añadir estadísticas finales
+                        final_stats = stats.compile(final_pop)
+                        f.write(f"OBJETIVOS ALCANZADOS:\n")
+                        f.write(f"- Fitness medio final: {final_stats['avg']:.4f}\n")
+                        f.write(f"- Fitness máximo final: {final_stats['max']:.4f}\n\n")
                         
-                        f.write("Probabilidades de selección de agentes:\n")
-                        for i, prob in enumerate(best_ind):
+                        # Identificar el individuo que más contribuye a ambos objetivos
+                        avg_fitness = final_stats['avg']
+                        max_fitness = final_stats['max']
+                        
+                        # Calcular contribución combinada a ambos objetivos
+                        for ind in final_pop:
+                            avg_contribution = (ind.fitness.values[0] - avg_fitness) / max(0.001, avg_fitness)
+                            max_contribution = (ind.fitness.values[1] - max_fitness) / max(0.001, max_fitness)
+                            ind.contribution = 0.5 * avg_contribution + 0.5 * max_contribution
+                        
+                        sorted_by_contribution = sorted(final_pop, key=lambda ind: ind.contribution, reverse=True)
+                        best_contributor = sorted_by_contribution[0]
+                        
+                        f.write("Individuo con mayor contribución a ambos objetivos:\n")
+                        f.write(f"{best_contributor}\n")
+                        f.write(f"Fitness medio: {best_contributor.fitness.values[0]:.4f}\n")
+                        f.write(f"Fitness máximo: {best_contributor.fitness.values[1]:.4f}\n")
+                        f.write(f"Contribución combinada: {best_contributor.contribution:.4f}\n\n")
+                        
+                        f.write("Probabilidades de selección de agentes del mejor contribuidor:\n")
+                        for i, prob in enumerate(best_contributor):
                             agent_name = AGENTS[i].__name__
                             f.write(f"{agent_name}: {prob:.4f}\n")
                     

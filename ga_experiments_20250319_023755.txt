@@ -1,0 +1,200 @@
+Experimentos con hiperparámetros del algoritmo genético
+=====================================================
+
+Experimento 1: Tamaño de población
+----------------------------------
+
+Tamaño de población: 30
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8004
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.04197927244246536, 0.14589158883460032, 0.0, 0.0, 0.22341962157192854, 0.005724562485566533, 0.2072295648516302, 0.10929213116645362, 0.1281381345147402, 0.13832512413261522]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 52.44 segundos
+
+
+Tamaño de población: 50
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8193
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.12733892616706335, 0.10588363632207538, 0.05831807344073133, 0.1397579038506305, 0.04980389841404988, 0.14419911296472093, 0.1505420132590884, 0.061297303959820255, 0.06343342320533438, 0.0994257084164855]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 86.51 segundos
+
+
+Tamaño de población: 100
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8142
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.10311105561905151, 0.04864148932240237, 0.14089041015048828, 0.16148590732148937, 0.09454412647704287, 0.13572807023150987, 0.12768594428399319, 0.06453949590923345, 0.04778873069679176, 0.07558476998799722]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 182.16 segundos
+
+
+Experimento 2: Probabilidad de cruce
+------------------------------------
+
+Probabilidad de cruce: 0.7
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8348
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.05641434241719221, 0.19177510737503733, 0.08990900257157795, 0.1813866113913083, 0.1527935252491092, 0.12215185222876328, 0.0, 0.13023207996918035, 0.07533747879783134, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 85.66 segundos
+
+
+Probabilidad de cruce: 0.8
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8197
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.0, 0.0653809940389465, 0.0, 0.2393179041406461, 0.0820655071205515, 0.22272466285622725, 0.09205646021091637, 0.09771624140139173, 0.08028583446748828, 0.12045239576383232]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 89.95 segundos
+
+
+Probabilidad de cruce: 0.9
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8208
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.03948734288067774, 0.12658938686121315, 0.08695446477842633, 0.21224740512706272, 0.0, 0.09671838946889724, 0.0, 0.0761388011140733, 0.03269947114487806, 0.32916473862477147]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 99.59 segundos
+
+
+Experimento 3: Probabilidad de mutación
+---------------------------------------
+
+Probabilidad de mutación: 0.1
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8021
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.019214419582068126, 0.0034081540176810247, 0.12255735265222203, 0.05974435130395202, 0.18499177111435505, 0.005315808232452351, 0.15974754279121653, 0.3077070375658394, 0.13731356274021342, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 92.32 segundos
+
+
+Probabilidad de mutación: 0.2
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8166
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.11221665356824184, 0.20281159558689765, 0.04591062751776198, 0.04239092417372431, 0.11411642878730104, 0.09223105327311126, 0.04534531735787609, 0.07722472059773305, 0.16102373079050472, 0.10672894834684808]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 88.93 segundos
+
+
+Probabilidad de mutación: 0.3
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8236
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.0, 0.0, 0.13910575550950946, 0.19593410682276577, 0.18168243723797245, 0.12165297201645049, 0.02827506679450826, 0.18605451625477068, 0.016528919746145312, 0.13076622561787757]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 94.37 segundos
+
+
+Experimento 4: Tamaño del torneo
+----------------------------------
+
+Tamaño de torneo: 2
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8288
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.032762521314490006, 0.17723853020584623, 0.0, 0.5171391784924568, 0.05803797463618349, 0.0, 0.21482179535102341, 0.0, 0.0, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 88.63 segundos
+
+
+Tamaño de torneo: 3
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.7638
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.05806217429841456, 0.03830358658599408, 0.13136544356804605, 0.17150254210441915, 0.17428883349905197, 0.09319301921589122, 0.1791069224471932, 0.0, 0.15417747828098968, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 94.55 segundos
+
+
+Tamaño de torneo: 5
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8000
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.16976582840187332, 0.1266838759732725, 0.03690648606581417, 0.12730135491927902, 0.10936113409392166, 0.003161554383285059, 0.09916477501786262, 0.18451626941271057, 0.034989538394067515, 0.10814918333791361]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 84.93 segundos
+
+
+Experimento 5: Número de partidas por evaluación
+------------------------------------------------
+
+Número de partidas: 5
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8223
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.07750146925866272, 0.041192119697886484, 0.0046201725833209415, 0.25803662313831277, 0.10553683522732347, 0.07786549150108515, 0.16324938615879217, 0.13401755620738226, 0.06608265484608643, 0.07189769138114759]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 81.84 segundos
+
+
+Número de partidas: 10
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.7957
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.1313845984119173, 0.14185806443061066, 0.005102162309319515, 0.11688188564244403, 0.07351079012705239, 0.05256893264589608, 0.20570814169654894, 0.0, 0.0, 0.27298542473621107]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 93.53 segundos
+
+
+Número de partidas: 20
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8098
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.1245531712134641, 0.029628920947018272, 0.003084437749114685, 0.2517389799435015, 0.021765718892757614, 0.11049194504744783, 0.06906117562160707, 0.16035217189567594, 0.19316214532025042, 0.03616133336916262]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 91.15 segundos
+
+
+Experimento 6: Número de generaciones
+--------------------------------------
+
+Número de generaciones: 50
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.7877
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.10590486416675379, 0.07926894916337118, 0.08028863751741132, 0.15847990087404293, 0.310907199190125, 0.15541024593665734, 0.0, 0.10974020315163847, 0.0, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 234.47 segundos
+
+
+Número de generaciones: 100
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8310
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.055167150079800935, 0.04036443734407978, 0.0, 0.07652362801388335, 0.2721726586662747, 0.11515220621470439, 0.32944156580170414, 0.07920714857780058, 0.031971205301752056, 0.0]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 434.93 segundos
+
+
+Número de generaciones: 200
+OBJETIVOS ALCANZADOS:
+- Fitness medio final: 0.8561
+- Fitness máximo final: 1.0000
+Mejor individuo (contribución a ambos objetivos): [0.0794803711942674, 0.002739256786265519, 0.0, 0.0, 0.21374618583308258, 0.13956248449376432, 0.19545557964674534, 0.14810105986169472, 0.08829295897162227, 0.1326221032125578]
+Fitness medio: 1.0000
+Fitness máximo: 1.0000
+Tiempo de ejecución: 884.42 segundos
+
